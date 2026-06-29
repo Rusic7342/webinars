@@ -445,10 +445,17 @@
       // Doesn't block the thank-you screen; failures are silent.
       if (cfg.N8N_WEBHOOK && cfg.N8N_WEBHOOK.indexOf('YOUR') === -1) {
         try {
+          // form-encoded + no custom Content-Type = a "simple" CORS request → no preflight,
+          // so it reaches n8n cross-origin (we don't read the response anyway).
           fetch(cfg.N8N_WEBHOOK, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lead_id: leadId, email: email, first_name: name, timezone: tz, webinar_slug: cfg.WEBINAR_SLUG || null })
+            body: new URLSearchParams({
+              lead_id: leadId,
+              email: email,
+              first_name: name || '',
+              timezone: tz || '',
+              webinar_slug: cfg.WEBINAR_SLUG || ''
+            })
           }).catch(function(){});
         } catch (e) {}
       }
