@@ -9,8 +9,9 @@ window.ICF_CONFIG = {
   SUPABASE_URL: 'https://coxzeqtgtokfsrfnzxwn.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveHplcXRndG9rZnNyZm56eHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MTUzMzUsImV4cCI6MjA5NTI5MTMzNX0.zqzt536-Q71JPUNmiXypYMxKpy1Auci19BF6ko4MeNg',
 
-  // Telegram bot username (without the @). Created via @BotFather. TODO: not created yet.
-  TG_BOT: 'YourBotUsername',
+  // Telegram bot username (without the @). Created via @BotFather.
+  // Token is a SECRET — it lives only in n8n, never here.
+  TG_BOT: 'webinar_M_bot',
 
   // Which webinar this landing registers people for (matches webinars.slug).
   WEBINAR_SLUG: 'launch'
