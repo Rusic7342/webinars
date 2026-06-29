@@ -91,7 +91,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Parse start').item.json.chat_id }}",
-        "text": "Hi! 👋 To get your webinar reminders here, register on the site first, then tap the Telegram button on the thank-you screen.",
+        "text": "👋 This is the reminders bot for the free live workshop “Your AI has never met your client.”\n\nTo get your reminders here, first save your seat on the site — then tap the Telegram button on the confirmation screen:\n👉 https://itscontentflow.com",
         "additionalFields": {}
       },
       "id": "tg-noreg",
