@@ -1,0 +1,104 @@
+{
+  "name": "itscontentflow — 02 Reminders cron (Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] }
+      },
+      "id": "schedule",
+      "name": "Every 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinars?select=*&starts_at=gt.{{ $now.minus({ minutes: 30 }).toISO() }}&order=starts_at.asc&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "get-webinar",
+      "name": "Get next webinar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const w = $input.first() ? $input.first().json : null;\nif (!w || !w.starts_at) { return []; }\nconst start = new Date(w.starts_at).getTime();\nconst mins = (start - Date.now()) / 60000;\nconst link = w.join_url || '(link coming soon)';\nlet step = null, message = null;\nif (mins <= 1440 && mins > 180) {\n  step = 'day_before';\n  message = `⏰ Reminder: “${w.title}” is tomorrow at {TIME}.\\nSave the link so you don’t lose it: ${link}`;\n} else if (mins <= 180 && mins > 60) {\n  step = 'soon_3h';\n  message = `📌 Today! “${w.title}” goes live at {TIME}.\\nJoin here: ${link}`;\n} else if (mins <= 60 && mins > 15) {\n  step = 'hour_before';\n  message = `🔔 We go live in about an hour — at {TIME}.\\nJoin: ${link}`;\n} else if (mins <= 15 && mins > 0) {\n  step = 'fifteen_min';\n  message = `🚀 Starting in ~15 minutes! Grab a pen.\\nJoin now: ${link}`;\n} else if (mins <= 0 && mins > -20) {\n  step = 'live';\n  message = `🔴 We’re LIVE now — come on in!\\n${link}`;\n}\nif (!step) { return []; }\nreturn [{ json: { slug: w.slug, title: w.title, starts_at: w.starts_at, join_url: link, step, message } }];"
+      },
+      "id": "compute-step",
+      "name": "Compute due step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinar_leads?select=id,first_name,timezone,tg_chat_id&webinar_slug=eq.{{ $json.slug }}&tg_chat_id=not.is.null&steps_sent=not.cs.%7B{{ $json.step }}%7D",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "get-leads",
+      "name": "Get leads to notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300],
+      "credentials": {
+        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.tg_chat_id }}",
+        "text": "={{ $('Compute due step').first().json.message.replace('{TIME}', DateTime.fromISO($('Compute due step').first().json.starts_at, { zone: 'utc' }).setZone($json.timezone || 'UTC').toFormat('ccc d LLL, HH:mm (ZZZZ)')) }}",
+        "additionalFields": {}
+      },
+      "id": "send-tg",
+      "name": "Send Telegram reminder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 300],
+      "credentials": {
+        "telegramApi": { "name": "webinar_M_bot" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/rpc/mark_tg_step",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_lead\": \"{{ $('Get leads to notify').item.json.id }}\", \"p_step\": \"{{ $('Compute due step').first().json.step }}\" }",
+        "options": {}
+      },
+      "id": "mark-sent",
+      "name": "Mark step sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 300],
+      "credentials": {
+        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 min": { "main": [[{ "node": "Get next webinar", "type": "main", "index": 0 }]] },
+    "Get next webinar": { "main": [[{ "node": "Compute due step", "type": "main", "index": 0 }]] },
+    "Compute due step": { "main": [[{ "node": "Get leads to notify", "type": "main", "index": 0 }]] },
+    "Get leads to notify": { "main": [[{ "node": "Send Telegram reminder", "type": "main", "index": 0 }]] },
+    "Send Telegram reminder": { "main": [[{ "node": "Mark step sent", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

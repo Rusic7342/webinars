@@ -41,8 +41,37 @@ opens the bot with `/start <lead_id>`. This workflow:
    select email, tg_chat_id, tg_connected_at from webinar_leads where id = '<that-id>';
    ```
 
+## 02 — Reminders cron, Telegram (`02-reminders-cron.json`)
+
+Sends timed Telegram reminders so people actually show up. Every 15 min it:
+1. gets the next upcoming webinar (`starts_at` within the future / last 30 min),
+2. computes which step is **due** by minutes-to-start:
+   `day_before` (24h–3h) · `soon_3h` (3h–1h) · `hour_before` (1h–15m) · `fifteen_min` (15m–0) · `live` (0 to −20m),
+3. fetches TG-connected leads who haven't gotten that step (`steps_sent` not contains it),
+4. sends the message — webinar time rendered in **each lead's timezone**,
+5. calls `mark_tg_step(lead, step)` to record it (idempotent, no double-sends).
+
+### Prerequisite
+Run `supabase/02-reminders-functions.sql` once (SQL Editor) to create `mark_tg_step`.
+
+### Import
+Same as WF#1: Import from File → map the two credentials (Telegram `webinar_M_bot`,
+Supabase `Supabase Beyond Promts (service_role)`) → **activate**.
+
+### Test (without waiting for the real date)
+1. Temporarily set a webinar ~10–15 min out so a step is "due":
+   ```sql
+   update webinars set starts_at = now() + interval '12 minutes' where slug = 'launch';
+   ```
+2. Make sure you have a TG-connected test lead (one with `tg_chat_id`, e.g. yourself via the opt-in link).
+3. In the workflow, click **Execute workflow** (don't wait for the 15-min tick).
+4. Expect a Telegram reminder + the lead's `steps_sent` now contains the step:
+   ```sql
+   select email, steps_sent, tg_sent from webinar_leads where tg_chat_id is not null;
+   ```
+5. Run it again → it should NOT resend (idempotent). Reset the date afterwards.
+
 ## Next (not built yet)
-- `02-reminders-cron.json` — Schedule Trigger every ~15 min: compute the due step
-  relative to `webinars.starts_at`, send via Telegram/email to leads missing that step,
-  mark `steps_sent`.
+- Email channel for the same steps (provider TBD: GetResponse vs Resend) — add a parallel send branch.
 - Bot profiling survey (level / goal buttons) appended after the opt-in confirmation.
+- Post-webinar branch: `attended` flag from Zoom → replay (no-show) / offer (attended).
