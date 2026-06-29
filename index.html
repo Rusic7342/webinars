@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your AI has never met your client — Free Live Workshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F6FB;
+    --paper-2:#EBEDF7;
+    --card:#FFFFFF;
+    --ink:#0E0F1A;
+    --ink-soft:#363A4A;
+    --ink-faint:#8A8EA0;
+    --acid:#C9FF43;
+    --acid-soft:rgba(201,255,67,.55);
+    --peri:#5F7ADB;
+    --peri-deep:#4456BE;
+    --cyan:#4EF0FF;
+    --line:rgba(14,15,26,.12);
+    --line-strong:rgba(14,15,26,.20);
+    --disp:'Space Grotesk',sans-serif;
+    --body:'Inter',sans-serif;
+    --mono:'Space Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  ::selection{background:var(--acid);color:var(--ink)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+  .mono{font-family:var(--mono)}
+
+  .mark{background-image:linear-gradient(transparent 56%, var(--acid-soft) 56%);padding:0 .08em}
+
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--peri-deep);display:inline-flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:3px;background:var(--acid)}
+
+  h1,h2,h3{font-family:var(--disp);font-weight:600;line-height:1.04;letter-spacing:-.02em;color:var(--ink)}
+
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(245,246,251,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar .row{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{font-family:var(--mono);font-weight:700;font-size:15px}
+  .brand b{color:var(--peri-deep)}
+  .topbar .when{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);letter-spacing:.04em}
+  @media(max-width:680px){.topbar .when{display:none}}
+  .btn{font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:.02em;background:var(--acid);color:var(--ink);border:none;border-radius:3px;padding:11px 18px;cursor:pointer;text-decoration:none;display:inline-block;transition:transform .15s ease,box-shadow .15s ease}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(68,86,190,.24)}
+  .btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+  .btn-lg{padding:16px 30px;font-size:15px}
+  .btn-block{display:block;width:100%;text-align:center}
+
+  .hero{padding:84px 0 72px;position:relative}
+  .hero::before{content:"";position:absolute;top:-100px;right:-160px;width:480px;height:480px;background:radial-gradient(circle,rgba(78,240,255,.16),transparent 66%);pointer-events:none}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center;position:relative}
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:44px}}
+  .hero h1{font-size:clamp(40px,5.8vw,70px);font-weight:700;margin:22px 0 0}
+  .hero .sub{font-size:18.5px;color:var(--ink-soft);margin:26px 0 0;max-width:37ch}
+  .hero .sub b{color:var(--ink);font-weight:600}
+  .hero .sub i{font-style:italic;color:var(--peri-deep);font-weight:500}
+
+  .capture{margin-top:34px;max-width:440px}
+  .capture .fields{display:flex;flex-direction:column;gap:10px}
+  .capture input{font-family:var(--body);font-size:15.5px;color:var(--ink);background:var(--card);border:1px solid var(--line-strong);border-radius:3px;padding:14px 16px;width:100%}
+  .capture input::placeholder{color:#A2A6B6}
+  .capture input:focus{outline:none;border-color:var(--peri)}
+  .capture .note{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);margin-top:12px;letter-spacing:.03em}
+  .capture .note b{color:var(--peri-deep);font-weight:400}
+  .capture .err{font-family:var(--mono);font-size:11.5px;color:#c0392b;margin-top:10px;display:none}
+
+  .diff{display:flex;flex-direction:column;gap:14px}
+  .diff-card{border-radius:8px;overflow:hidden}
+  .diff-card .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+  .diff-card .body{padding:18px 16px;font-size:14.5px;line-height:1.58}
+  .card-dead{background:var(--paper-2);border:1px solid var(--line)}
+  .card-dead .tag{color:var(--ink-faint);border-bottom:1px solid var(--line)}
+  .card-dead .tag .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint)}
+  .card-dead .body{color:var(--ink-faint)}
+  .card-live{background:var(--card);border:1px solid var(--peri);box-shadow:0 14px 40px rgba(68,86,190,.12)}
+  .card-live .tag{color:var(--peri-deep);border-bottom:1px solid rgba(95,122,219,.25)}
+  .card-live .tag .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px rgba(78,240,255,.9)}
+  .card-live .body{color:var(--ink)}
+  .cursor{display:inline-block;width:9px;height:16px;background:var(--ink);vertical-align:-2px;margin-left:2px;animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .section{padding:78px 0;border-top:1px solid var(--line)}
+  .section-head{max-width:780px}
+  .section-head h2{font-size:clamp(28px,3.6vw,44px);margin:18px 0 0}
+  .alt{background:var(--paper-2)}
+
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  @media(max-width:820px){.pgrid{grid-template-columns:1fr;gap:26px}}
+  .pgrid p{color:var(--ink-soft);font-size:17.5px;margin-top:20px}
+  .pgrid p b{color:var(--ink);font-weight:600}
+  .stat-chip{font-family:var(--mono);font-size:13px;color:var(--peri-deep);border:1px solid var(--peri);border-radius:3px;padding:9px 14px;display:inline-block;margin-top:22px;letter-spacing:.02em}
+
+  .learn-list{margin-top:46px;border-top:1px solid var(--line)}
+  .learn-item{display:grid;grid-template-columns:190px 1fr;gap:36px;padding:32px 0;border-bottom:1px solid var(--line);align-items:start}
+  @media(max-width:760px){.learn-item{grid-template-columns:1fr;gap:10px;padding:26px 0}}
+  .learn-key{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--peri-deep);padding-top:5px}
+  .learn-item h3{font-size:23px;font-weight:600;margin-bottom:9px}
+  .learn-item p{color:var(--ink-soft);font-size:16.5px}
+  .live-pill{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--peri-deep);padding:2px 8px;border-radius:3px;margin-left:10px;vertical-align:2px}
+
+  .who-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:42px}
+  @media(max-width:720px){.who-cols{grid-template-columns:1fr}}
+  .who-card{border:1px solid var(--line);border-radius:8px;padding:28px;background:var(--card)}
+  .who-card.yes{border-color:var(--peri)}
+  .who-card .h{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
+  .who-card.yes .h{color:var(--peri-deep)}
+  .who-card.no .h{color:var(--ink-faint)}
+  .who-card ul{list-style:none}
+  .who-card li{padding:9px 0;font-size:16px;color:var(--ink-soft);border-bottom:1px solid var(--line);position:relative;padding-left:22px}
+  .who-card li:last-child{border-bottom:none}
+  .who-card li::before{position:absolute;left:0;font-family:var(--mono);font-weight:700}
+  .who-card.yes li::before{content:"+";color:var(--peri-deep)}
+  .who-card.no li::before{content:"\2715";color:var(--ink-faint)}
+
+  .about-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:54px;align-items:center}
+  @media(max-width:820px){.about-grid{grid-template-columns:1fr;gap:32px}}
+  .years{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:34px 30px;text-align:center;position:relative;overflow:hidden}
+  .years::after{content:"";position:absolute;left:0;bottom:0;width:100%;height:6px;background:var(--acid)}
+  .years .n{font-family:var(--disp);font-weight:700;font-size:clamp(70px,11vw,104px);line-height:.9;color:var(--peri-deep);letter-spacing:-.03em}
+  .years .l{font-family:var(--mono);font-size:13px;color:var(--ink-soft);margin-top:14px;letter-spacing:.06em;text-transform:uppercase}
+  .about-body h2{font-size:clamp(26px,3.2vw,40px)}
+  .about-body p{color:var(--ink-soft);font-size:17.5px;margin-top:18px}
+  .about-body p b{color:var(--ink);font-weight:600}
+  .about-body .pull{color:var(--peri-deep);font-family:var(--disp);font-size:21px;line-height:1.3;margin-top:24px;font-weight:500}
+  .ph-box{border:1px dashed var(--line-strong);border-radius:4px;padding:3px 9px;color:var(--peri-deep);font-family:var(--mono);font-size:.84em;display:inline-block}
+
+  .liveproof .lp{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  @media(max-width:820px){.liveproof .lp{grid-template-columns:1fr;gap:26px}}
+  .liveproof p{color:var(--ink-soft);font-size:18px;margin-top:20px}
+  .liveproof p b{color:var(--ink);font-weight:600}
+  .liveproof .demo-note{font-family:var(--mono);font-size:12.5px;color:var(--ink-faint);margin-top:18px;letter-spacing:.03em}
+  .quote-card{border:1px solid var(--line);border-left:3px solid var(--acid);background:var(--card);border-radius:8px;padding:28px 30px}
+  .quote-card .q{font-family:var(--disp);font-size:20px;font-weight:500;line-height:1.4;color:var(--ink)}
+  .quote-card .q .ph{color:var(--peri-deep)}
+  .quote-card .by{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);margin-top:16px;letter-spacing:.03em}
+  .quote-card .opt{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;display:block}
+
+  .bridge .bx{border:1px solid var(--line);border-left:3px solid var(--acid);border-radius:8px;background:var(--card);padding:34px 36px;max-width:860px}
+  .bridge .bx p{font-size:18.5px;color:var(--ink-soft)}
+  .bridge .bx p b{color:var(--ink);font-weight:600}
+  .bridge .bx .small{font-family:var(--mono);font-size:12.5px;color:var(--ink-faint);margin-top:16px;letter-spacing:.03em}
+
+  .final{padding:96px 0;text-align:center;position:relative;border-top:1px solid var(--line);background:var(--paper-2)}
+  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(78,240,255,.12),transparent 58%);pointer-events:none}
+  .final .eyebrow{justify-content:center}
+  .final h2{font-size:clamp(32px,5vw,58px);font-weight:700;margin:22px auto 0;max-width:18ch}
+  .final .capture{margin:36px auto 0}
+  .final .when-line{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);margin-top:26px;letter-spacing:.04em}
+  .final .when-line b{color:var(--peri-deep);font-weight:400}
+
+  .faq-list{margin-top:36px;border-top:1px solid var(--line)}
+  .faq-item{padding:24px 0;border-bottom:1px solid var(--line)}
+  .faq-item h3{font-size:18.5px;font-weight:600}
+  .faq-item p{color:var(--ink-soft);font-size:16px;margin-top:9px;max-width:70ch}
+
+  footer{padding:46px 0;text-align:center;border-top:1px solid var(--line)}
+  footer .brand{display:block;margin-bottom:12px}
+  footer p{font-family:var(--mono);font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}.cursor{animation:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap row">
+    <div class="brand">its<b>content</b>flow</div>
+    <div class="when">FREE LIVE · [WED · JULY&nbsp;XX] · [TIME&nbsp;TZ]</div>
+    <a href="#register" class="btn">Save my seat</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="reveal">
+      <span class="eyebrow">Free live workshop · [Date]</span>
+      <h1>Your AI has <span class="mark">never met your client</span>.</h1>
+      <p class="sub">That's why your content keeps coming out generic — it's writing for no one. <b>Keep your 150 prompts; they were never the problem.</b> In one free, live workshop, I'll show you how to introduce them — so your AI finally writes like <i>you</i>.</p>
+
+      <form class="capture" id="register" novalidate>
+        <div class="fields">
+          <input type="text" placeholder="First name" aria-label="First name" autocomplete="given-name">
+          <input type="email" placeholder="Your best email" aria-label="Email" autocomplete="email" required>
+          <button class="btn btn-lg btn-block" type="submit">Save my free seat →</button>
+        </div>
+        <p class="err">Please enter a valid email and try again.</p>
+        <p class="note">Free · Live · [Date · Time]. <b>Replay only if you register.</b></p>
+      </form>
+    </div>
+
+    <div class="reveal">
+      <div class="diff">
+        <div class="diff-card card-dead">
+          <div class="tag"><span>Prompt only</span><span class="dot"></span></div>
+          <div class="body">Unlock your potential! In today's fast-paced digital world, leveraging the power of AI can transform your business. Here are 5 game-changing tips to elevate your content strategy and drive real engagement…</div>
+        </div>
+        <div class="diff-card card-live">
+          <div class="tag"><span>Prompt + context</span><span class="dot"></span></div>
+          <div class="body">You saved 150 prompts and your content still reads like a <span class="mark">LinkedIn robot</span>. That's not a you problem. Your AI has never met your client. Let's introduce them.<span class="cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section alt">
+  <div class="wrap">
+    <div class="pgrid">
+      <div class="section-head reveal">
+        <span class="eyebrow">The real problem</span>
+        <h2>You're not bad at this. Your AI just doesn't know you.</h2>
+      </div>
+      <div class="reveal">
+        <p>Every flat, forgettable line your AI gives you, it gives you because it has <b>no idea who your client is</b>, what they're struggling with, or how they actually talk. So it reaches for safe, generic filler — the kind your people scroll right past.</p>
+        <p><b>More prompts won't fix that. Context will.</b> And that's a marketing skill, not a prompt you can copy-paste.</p>
+        <span class="stat-chip">generic in → generic out · every time</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEARN -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">What you'll walk away with</span>
+      <h2>Three things, live, that change how your AI writes.</h2>
+    </div>
+    <div class="learn-list">
+      <div class="learn-item reveal">
+        <div class="learn-key">The gap</div>
+        <div>
+          <h3>Why your AI writes generic content</h3>
+          <p>The real reason your output is bland — and why no prompt pack, mega-prompt, or "100 viral hooks" will ever fix it.</p>
+        </div>
+      </div>
+      <div class="learn-item reveal">
+        <div class="learn-key">The move</div>
+        <div>
+          <h3>One topic, two readers, completely different content <span class="live-pill">Live demo</span></h3>
+          <p>Watch the same subject become two totally different pieces depending on where your reader actually is. This is the moment it clicks.</p>
+        </div>
+      </div>
+      <div class="learn-item reveal">
+        <div class="learn-key">The words</div>
+        <div>
+          <h3>How to make AI sound like "this is for me"</h3>
+          <p>Feed your AI the way your customers actually talk — their words, not your polished ones — so your content finally stops the scroll.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHO -->
+<section class="section alt">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Who this is for</span>
+      <h2>Built for one specific person.</h2>
+    </div>
+    <div class="who-cols">
+      <div class="who-card yes reveal">
+        <div class="h">Come if</div>
+        <ul>
+          <li>You're a coach, creator or solopreneur using AI for content</li>
+          <li>Your writing is fine — but it sounds like everyone else's</li>
+          <li>You're done collecting prompts that change nothing</li>
+          <li>You want content that sells, not content that fills a calendar</li>
+        </ul>
+      </div>
+      <div class="who-card no reveal">
+        <div class="h">Skip it if</div>
+        <ul>
+          <li>You just want another prompt pack (this is the opposite)</li>
+          <li>You're after "post 5 times a day" hacks</li>
+          <li>You don't write or sell with content at all</li>
+          <li>You want a magic button with zero thinking</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section">
+  <div class="wrap">
+    <div class="about-grid">
+      <div class="years reveal">
+        <div class="n">16</div>
+        <div class="l">years in marketing<br>&amp; copywriting</div>
+      </div>
+      <div class="about-body reveal">
+        <span class="eyebrow">Who's teaching</span>
+        <h2>The part your AI can't know on its own.</h2>
+        <p>I'm Maria. I spent <b>16 years writing copy and building marketing</b> long before AI could string a sentence together. <span class="ph-box">[ optional: one line — your niche, who you've worked with ]</span></p>
+        <p>This isn't a prompting trick. It's everything the machine can't figure out alone: what makes content land, what makes people actually buy, and how to hand all of that to your AI so it stops guessing.</p>
+        <p class="pull">Anyone can prompt. The context is the moat — and the context is 16 years.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE PROOF -->
+<section class="section alt liveproof">
+  <div class="wrap">
+    <span class="eyebrow reveal">Proof</span>
+    <div class="lp">
+      <div class="reveal">
+        <h2>No screenshots. You'll watch it happen.</h2>
+        <p>I'm not going to show you cherry-picked before-and-afters you have to take on faith. In the workshop, I'll take a <b>real topic and rewrite it live</b> — the generic AI version, then the same thing with context — so you see the difference with your own eyes, in real time.</p>
+        <p class="demo-note">The demo is the proof. That's the whole point.</p>
+      </div>
+      <div class="quote-card reveal">
+        <span class="opt">Optional — add once you have one</span>
+        <div class="q">"<span class="ph">[ A real line from someone whose AI content went from generic to sounding exactly like them. Remove this card until you have it. ]</span>"</div>
+        <div class="by">— [ Name, what they do ]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<section class="section bridge">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">What happens after</span>
+      <h2>You'll leave with a real shift — and a clear next step.</h2>
+    </div>
+    <div class="bx reveal">
+      <p>This workshop gives you the <b>what</b> and the <b>why</b>: you'll understand exactly why your AI writes generic content, and you'll watch the fix happen. If you want it <b>built for your business</b> — your customer's real words, your reader's stages, your AI set up to remember all of it — that's where we go deeper together.</p>
+      <p class="small">Either way, you walk away knowing something you can't un-know. No pitch needed to get value.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <span class="eyebrow">Free · Live · One session</span>
+    <h2>Get your AI writing like <span class="mark">you</span>.</h2>
+    <form class="capture" novalidate>
+      <div class="fields">
+        <input type="text" placeholder="First name" aria-label="First name" autocomplete="given-name">
+        <input type="email" placeholder="Your best email" aria-label="Email" autocomplete="email" required>
+        <button class="btn btn-lg btn-block" type="submit">Save my free seat →</button>
+      </div>
+      <p class="err">Please enter a valid email and try again.</p>
+      <p class="note">No cost. No replay unless you register. Bring a pen.</p>
+    </form>
+    <p class="when-line">[ <b>Wednesday, July XX</b> · <b>TIME / timezone</b> · ~60 min live ]</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section alt">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Quick answers</span>
+      <h2>Before you save your seat.</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item reveal"><h3>Is it really free?</h3><p>Completely. The workshop costs nothing, and you'll leave with real, usable understanding whether or not you ever work with me after.</p></div>
+      <div class="faq-item reveal"><h3>Do I need to know AI or Claude already?</h3><p>No. If you've ever asked an AI to write something and felt let down by what came back, you're exactly ready for this.</p></div>
+      <div class="faq-item reveal"><h3>Will there be a replay?</h3><p>[ Your call — recommended: replay goes only to people who register, available for a short window. Showing up live is always better. ]</p></div>
+      <div class="faq-item reveal"><h3>How long is it?</h3><p>About [60] minutes, live. Bring something you actually want to write — you'll see the difference applied to a real example.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="brand">its<b style="color:var(--peri-deep)">content</b>flow</span>
+    <p>© 2026 itscontentflow · [ your footer links / privacy ]</p>
+  </div>
+</footer>
+
+<!-- ============ SUPABASE FORM WIRING ============ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script>
+  (function(){
+    // ---- guard: config present? ----
+    var cfg = window.ICF_CONFIG || {};
+    var sb = null;
+    if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY
+       && cfg.SUPABASE_URL.indexOf('YOUR-PROJECT') === -1){
+      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+    }
+
+    function getUTM(){
+      var p = new URLSearchParams(location.search), utm = {}, keys =
+        ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+      keys.forEach(function(k){ if(p.get(k)) utm[k] = p.get(k); });
+      if(document.referrer) utm.referrer = document.referrer;
+      return Object.keys(utm).length ? utm : null;
+    }
+
+    function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+    function showThanks(form, name, tgUrl){
+      var hi = name ? (', ' + name) : '';
+      form.innerHTML =
+        '<div style="text-align:left">' +
+          '<p class="note" style="font-size:13px;color:var(--peri-deep);margin:0 0 14px">' +
+            '✅ You’re registered' + hi + '!</p>' +
+          '<p style="font-size:15.5px;color:var(--ink);margin:0 0 18px;line-height:1.5">' +
+            'One last step — connect Telegram so you get the join link and a nudge right before we go ' +
+            'live. <b>This is where almost everyone who actually shows up comes from.</b></p>' +
+          '<a class="btn btn-lg btn-block" href="' + tgUrl + '" target="_blank" rel="noopener">' +
+            'Connect Telegram for reminders →</a>' +
+          '<p class="note" style="margin-top:12px">We’ll also email you the details and an ' +
+            'add-to-calendar link.</p>' +
+        '</div>';
+    }
+
+    function handle(form){
+      var nameEl  = form.querySelector('input[type=text]');
+      var emailEl = form.querySelector('input[type=email]');
+      var btn     = form.querySelector('button');
+      var errEl   = form.querySelector('.err');
+      var name  = nameEl ? nameEl.value.trim() : '';
+      var email = emailEl ? emailEl.value.trim() : '';
+
+      if(!validEmail(email)){ if(errEl) errEl.style.display='block'; if(emailEl) emailEl.focus(); return; }
+      if(errEl) errEl.style.display='none';
+
+      var leadId = (crypto.randomUUID ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+            var r = Math.floor(Math.random()*16), v = c==='x'? r : (r&0x3|0x8); return v.toString(16);}));
+      var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+      var tgUrl = 'https://t.me/' + (cfg.TG_BOT || 'YourBot') + '?start=' + leadId;
+
+      // If Supabase isn't configured yet, still advance the UX (don't lose the lead's intent).
+      if(!sb){
+        console.warn('[itscontentflow] Supabase not configured — skipping save. Fill config.js.');
+        showThanks(form, name, tgUrl);
+        return;
+      }
+
+      btn.disabled = true; var label = btn.textContent; btn.textContent = 'Saving…';
+
+      sb.from('webinar_leads').insert({
+        id: leadId,
+        first_name: name || null,
+        email: email,
+        timezone: tz,
+        webinar_slug: cfg.WEBINAR_SLUG || null,
+        source: getUTM()
+      }).then(function(res){
+        if(res.error){
+          // 23505 = unique violation → already registered, treat as success
+          if(res.error.code === '23505'){ showThanks(form, name, tgUrl); return; }
+          btn.disabled=false; btn.textContent=label;
+          if(errEl){ errEl.textContent='Something went wrong — please try again.'; errEl.style.display='block'; }
+          console.error('[itscontentflow] insert error', res.error);
+          return;
+        }
+        showThanks(form, name, tgUrl);
+      });
+    }
+
+    document.querySelectorAll('form.capture').forEach(function(f){
+      f.addEventListener('submit', function(e){ e.preventDefault(); handle(f); });
+    });
+  })();
+</script>
+
+<!-- ============ SCROLL REVEAL ============ -->
+<script>
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+    },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(e){io.observe(e);});
+  })();
+</script>
+</body>
+</html>

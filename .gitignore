@@ -1,0 +1,12 @@
+# local env / secrets (service_role key, bot token live in n8n, never here)
+.env
+.env.local
+*.local
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# n8n exports with credentials baked in (export sanitized versions only)
+*.creds.json
