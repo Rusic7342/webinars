@@ -1,0 +1,81 @@
+{
+  "name": "itscontentflow — 03 Welcome email (GetResponse)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webinar-signup",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook (form signup)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "webinar-signup"
+    },
+    {
+      "parameters": {
+        "url": "https://api.getresponse.com/v3/campaigns?query%5Bname%5D=Webinar",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-campaign",
+      "name": "Get campaign id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "httpHeaderAuth": { "name": "GetResponse API" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.getresponse.com/v3/custom-fields?query%5Bname%5D=bot_lead_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-field",
+      "name": "Get bot field id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": { "name": "GetResponse API" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.getresponse.com/v3/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"email\": \"{{ $('Webhook (form signup)').item.json.body.email }}\", \"name\": \"{{ $('Webhook (form signup)').item.json.body.first_name || '' }}\", \"dayOfCycle\": \"0\", \"campaign\": { \"campaignId\": \"{{ $('Get campaign id').first().json[0].campaignId }}\" }, \"customFieldValues\": [ { \"customFieldId\": \"{{ $('Get bot field id').first().json[0].customFieldId }}\", \"value\": [\"{{ $('Webhook (form signup)').item.json.body.lead_id }}\"] } ] }",
+        "options": {}
+      },
+      "id": "add-contact",
+      "name": "Add contact to GetResponse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300],
+      "credentials": {
+        "httpHeaderAuth": { "name": "GetResponse API" }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook (form signup)": { "main": [[{ "node": "Get campaign id", "type": "main", "index": 0 }]] },
+    "Get campaign id": { "main": [[{ "node": "Get bot field id", "type": "main", "index": 0 }]] },
+    "Get bot field id": { "main": [[{ "node": "Add contact to GetResponse", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

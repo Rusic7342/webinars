@@ -14,5 +14,8 @@ window.ICF_CONFIG = {
   TG_BOT: 'webinar_M_bot',
 
   // Which webinar this landing registers people for (matches webinars.slug).
-  WEBINAR_SLUG: 'launch'
+  WEBINAR_SLUG: 'launch',
+
+  // n8n webhook that sends the welcome email (WF#3). Public URL is fine.
+  N8N_WEBHOOK: 'https://tasks.itscontentflow.com/webhook/webinar-signup'
 };

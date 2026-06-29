@@ -71,7 +71,38 @@ Supabase `Supabase Beyond Promts (service_role)`) → **activate**.
    ```
 5. Run it again → it should NOT resend (idempotent). Reset the date afterwards.
 
+## 03 — Welcome email (`03-welcome-getresponse.json`)
+
+Sends the instant welcome email when someone registers. Triggered by the landing form
+(fire-and-forget `fetch` to this webhook), NOT by the cron — so the email goes out immediately.
+
+Flow: Webhook (`/webhook/webinar-signup`) → looks up the GetResponse campaign id (by name
+"Webinar") and the custom-field id (by name "bot_lead_id") → adds the contact to the list with
+`bot_lead_id` = the lead's id. A GetResponse **Day-0 autoresponder** then sends the actual email
+(`emails/welcome.md`), which builds the personal bot link from `[[bot_lead_id]]`.
+
+### GetResponse setup (one-time)
+1. Create a new **list (campaign)** named exactly **`Webinar`** (separate from the prompts list — do NOT use ukcj0).
+2. Create a **custom field** named exactly **`bot_lead_id`** (type: text/single line).
+3. Create an **autoresponder** on the `Webinar` list, **Day 0**, paste `emails/welcome.md` (subject + body), style it.
+4. Get your **API key**: GetResponse → Integrations & API → API → generate key.
+
+### n8n credential
+Create a **Header Auth** credential named **`GetResponse API`**:
+- Name: `X-Auth-Token`
+- Value: `api-key YOUR_GETRESPONSE_API_KEY`  ← note the literal `api-key ` prefix
+
+### Import & activate
+Import `03-welcome-getresponse.json` → map the `GetResponse API` credential on all 3 HTTP nodes →
+**activate**. The webhook URL becomes `https://tasks.itscontentflow.com/webhook/webinar-signup`
+(already set in the landing's `config.js`).
+
+### Test
+Submit the form on the live site with a real email → within seconds the contact appears in the
+`Webinar` list with `bot_lead_id` set → the Day-0 autoresponder sends the welcome.
+
 ## Next (not built yet)
-- Email channel for the same steps (provider TBD: GetResponse vs Resend) — add a parallel send branch.
+- Email reminders via **Resend** (per-lead, anchored to webinar date) — add to WF#2 alongside Telegram.
+- `templates` table in Supabase = editable battery of copy per channel/step/segment; n8n picks + (later) Claude personalizes.
 - Bot profiling survey (level / goal buttons) appended after the opt-in confirmation.
 - Post-webinar branch: `attended` flag from Zoom → replay (no-show) / offer (attended).

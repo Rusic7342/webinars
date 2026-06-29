@@ -441,6 +441,18 @@
       var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
       var tgUrl = 'https://t.me/' + (cfg.TG_BOT || 'YourBot') + '?start=' + leadId;
 
+      // Fire-and-forget: ping n8n so it sends the welcome email (via GetResponse).
+      // Doesn't block the thank-you screen; failures are silent.
+      if (cfg.N8N_WEBHOOK && cfg.N8N_WEBHOOK.indexOf('YOUR') === -1) {
+        try {
+          fetch(cfg.N8N_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lead_id: leadId, email: email, first_name: name, timezone: tz, webinar_slug: cfg.WEBINAR_SLUG || null })
+          }).catch(function(){});
+        } catch (e) {}
+      }
+
       // If Supabase isn't configured yet, still advance the UX (don't lose the lead's intent).
       if(!sb){
         console.warn('[itscontentflow] Supabase not configured — skipping save. Fill config.js.');
