@@ -1,0 +1,5 @@
+# Keep backend / source-of-truth files out of the public static deploy.
+# Only index.html + config.js need to be served.
+n8n/
+supabase/
+README.md
