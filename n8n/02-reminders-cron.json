@@ -1,5 +1,5 @@
 {
-  "name": "itscontentflow — 02 Reminders cron (Telegram)",
+  "name": "itscontentflow — 02 Reminders cron (Telegram + Email)",
   "nodes": [
     {
       "parameters": {
@@ -9,7 +9,7 @@
       "name": "Every 15 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [220, 300]
+      "position": [200, 320]
     },
     {
       "parameters": {
@@ -22,33 +22,33 @@
       "name": "Get next webinar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 300],
+      "position": [400, 320],
       "credentials": {
         "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
       }
     },
     {
       "parameters": {
-        "jsCode": "const w = $input.first() ? $input.first().json : null;\nif (!w || !w.starts_at) { return []; }\nconst start = new Date(w.starts_at).getTime();\nconst mins = (start - Date.now()) / 60000;\nconst link = w.join_url || '(link coming soon)';\nlet step = null, message = null;\nif (mins <= 1440 && mins > 180) {\n  step = 'day_before';\n  message = `⏰ Reminder: “${w.title}” is tomorrow at {TIME}.\\nSave the link so you don’t lose it: ${link}`;\n} else if (mins <= 180 && mins > 60) {\n  step = 'soon_3h';\n  message = `📌 Today! “${w.title}” goes live at {TIME}.\\nJoin here: ${link}`;\n} else if (mins <= 60 && mins > 15) {\n  step = 'hour_before';\n  message = `🔔 We go live in about an hour — at {TIME}.\\nJoin: ${link}`;\n} else if (mins <= 15 && mins > 0) {\n  step = 'fifteen_min';\n  message = `🚀 Starting in ~15 minutes! Grab a pen.\\nJoin now: ${link}`;\n} else if (mins <= 0 && mins > -20) {\n  step = 'live';\n  message = `🔴 We’re LIVE now — come on in!\\n${link}`;\n}\nif (!step) { return []; }\nreturn [{ json: { slug: w.slug, title: w.title, starts_at: w.starts_at, join_url: link, step, message } }];"
+        "jsCode": "const w = $input.first() ? $input.first().json : null;\nif (!w || !w.starts_at) { return []; }\nconst start = new Date(w.starts_at).getTime();\nconst mins = (start - Date.now()) / 60000;\nconst link = w.join_url || '(link coming soon)';\nlet step=null, message=null, emailSubject=null, emailBody=null;\nif (mins <= 1440 && mins > 180) {\n  step='day_before';\n  message=`⏰ Reminder: \"${w.title}\" is tomorrow at {TIME}.\\nSave the link: ${link}`;\n  emailSubject=`Tomorrow: \"${w.title}\"`;\n  emailBody=`Hi {NAME},\\n\\nQuick reminder — the workshop \"${w.title}\" is tomorrow at {TIME}.\\n\\nYour join link: ${link}\\n\\nSee you there,\\nMaria`;\n} else if (mins <= 180 && mins > 60) {\n  step='soon_3h';\n  message=`📌 Today! \"${w.title}\" goes live at {TIME}.\\nJoin: ${link}`;\n  emailSubject=`Today at {TIME}: \"${w.title}\"`;\n  emailBody=`Hi {NAME},\\n\\nWe go live today at {TIME}.\\n\\nJoin here: ${link}\\n\\nSee you soon,\\nMaria`;\n} else if (mins <= 60 && mins > 15) {\n  step='hour_before';\n  message=`🔔 We go live in about an hour, at {TIME}.\\nJoin: ${link}`;\n  emailSubject=`Starting in about an hour`;\n  emailBody=`Hi {NAME},\\n\\nWe go live in about an hour, at {TIME}.\\n\\nJoin here: ${link}\\n\\nMaria`;\n} else if (mins <= 15 && mins > 0) {\n  step='fifteen_min';\n  message=`🚀 Starting in ~15 minutes! Grab a pen.\\nJoin now: ${link}`;\n  emailSubject=`We start in ~15 minutes`;\n  emailBody=`Hi {NAME},\\n\\nWe go live in about 15 minutes. Grab a pen.\\n\\nJoin now: ${link}\\n\\nMaria`;\n} else if (mins <= 0 && mins > -20) {\n  step='live';\n  message=`🔴 We're LIVE now — come in!\\n${link}`;\n  emailSubject=`We're live now`;\n  emailBody=`Hi {NAME},\\n\\nWe just went live — come on in:\\n${link}\\n\\nMaria`;\n}\nif (!step) { return []; }\nreturn [{ json: { slug:w.slug, title:w.title, starts_at:w.starts_at, join_url:link, step, message, emailSubject, emailBody } }];"
       },
       "id": "compute-step",
       "name": "Compute due step",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 300]
+      "position": [600, 320]
     },
     {
       "parameters": {
-        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinar_leads?select=id,first_name,timezone,tg_chat_id&webinar_slug=eq.{{ $json.slug }}&tg_chat_id=not.is.null&steps_sent=not.cs.%7B{{ $json.step }}%7D",
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinar_leads?select=id,first_name,timezone,tg_chat_id&webinar_slug=eq.{{ $json.slug }}&tg_chat_id=not.is.null&tg_sent=not.cs.%7B{{ $json.step }}%7D",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "options": {}
       },
-      "id": "get-leads",
-      "name": "Get leads to notify",
+      "id": "get-tg-leads",
+      "name": "Get TG leads",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [880, 300],
+      "position": [840, 180],
       "credentials": {
         "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
       }
@@ -63,7 +63,7 @@
       "name": "Send Telegram reminder",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1100, 300],
+      "position": [1060, 180],
       "credentials": {
         "telegramApi": { "name": "webinar_M_bot" }
       }
@@ -80,14 +80,78 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={ \"p_lead\": \"{{ $('Get leads to notify').item.json.id }}\", \"p_step\": \"{{ $('Compute due step').first().json.step }}\" }",
-        "options": {}
+        "jsonBody": "={ \"p_lead\": \"{{ $('Get TG leads').item.json.id }}\", \"p_step\": \"{{ $('Compute due step').first().json.step }}\" }",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
       },
-      "id": "mark-sent",
-      "name": "Mark step sent",
+      "id": "mark-tg",
+      "name": "Mark TG step sent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1320, 300],
+      "position": [1280, 180],
+      "credentials": {
+        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinar_leads?select=id,first_name,timezone,email&webinar_slug=eq.{{ $json.slug }}&email=not.is.null&email_sent=not.cs.%7B{{ $json.step }}%7D",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "get-email-leads",
+      "name": "Get email leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 460],
+      "credentials": {
+        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"from\": \"Maria <maria@send.itscontentflow.com>\", \"to\": [{{ JSON.stringify($json.email) }}], \"subject\": {{ JSON.stringify($('Compute due step').first().json.emailSubject.replace('{TIME}', DateTime.fromISO($('Compute due step').first().json.starts_at, { zone: 'utc' }).setZone($json.timezone || 'UTC').toFormat('ccc d LLL, HH:mm (ZZZZ)'))) }}, \"text\": {{ JSON.stringify($('Compute due step').first().json.emailBody.replace('{NAME}', $json.first_name || 'there').replace('{TIME}', DateTime.fromISO($('Compute due step').first().json.starts_at, { zone: 'utc' }).setZone($json.timezone || 'UTC').toFormat('ccc d LLL, HH:mm (ZZZZ)'))) }} }",
+        "options": {}
+      },
+      "id": "send-resend",
+      "name": "Send email (Resend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 460],
+      "credentials": {
+        "httpHeaderAuth": { "name": "Resend API" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/rpc/mark_email_step",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_lead\": \"{{ $('Get email leads').item.json.id }}\", \"p_step\": \"{{ $('Compute due step').first().json.step }}\" }",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "mark-email",
+      "name": "Mark email step sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1280, 460],
       "credentials": {
         "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
       }
@@ -96,9 +160,16 @@
   "connections": {
     "Every 15 min": { "main": [[{ "node": "Get next webinar", "type": "main", "index": 0 }]] },
     "Get next webinar": { "main": [[{ "node": "Compute due step", "type": "main", "index": 0 }]] },
-    "Compute due step": { "main": [[{ "node": "Get leads to notify", "type": "main", "index": 0 }]] },
-    "Get leads to notify": { "main": [[{ "node": "Send Telegram reminder", "type": "main", "index": 0 }]] },
-    "Send Telegram reminder": { "main": [[{ "node": "Mark step sent", "type": "main", "index": 0 }]] }
+    "Compute due step": {
+      "main": [[
+        { "node": "Get TG leads", "type": "main", "index": 0 },
+        { "node": "Get email leads", "type": "main", "index": 0 }
+      ]]
+    },
+    "Get TG leads": { "main": [[{ "node": "Send Telegram reminder", "type": "main", "index": 0 }]] },
+    "Send Telegram reminder": { "main": [[{ "node": "Mark TG step sent", "type": "main", "index": 0 }]] },
+    "Get email leads": { "main": [[{ "node": "Send email (Resend)", "type": "main", "index": 0 }]] },
+    "Send email (Resend)": { "main": [[{ "node": "Mark email step sent", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" }
 }
