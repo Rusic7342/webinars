@@ -13,7 +13,7 @@
     },
     {
       "parameters": {
-        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinars?select=*&starts_at=gt.{{ $now.minus({ minutes: 30 }).toISO() }}&order=starts_at.asc&limit=1",
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinars?select=*&starts_at=gt.{{ $now.minus({ minutes: 30 }).toUTC().toISO() }}&order=starts_at.asc&limit=1",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "options": {}
