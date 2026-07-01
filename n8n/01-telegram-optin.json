@@ -1,19 +1,38 @@
 {
-  "name": "itscontentflow — 01 Telegram opt-in",
+  "name": "itscontentflow — 01 Telegram opt-in + survey",
   "nodes": [
     {
       "parameters": {
-        "updates": ["message"],
+        "updates": ["message", "callback_query"],
         "additionalFields": {}
       },
       "id": "tg-trigger",
       "name": "Telegram Trigger",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300],
-      "credentials": {
-        "telegramApi": { "name": "webinar_M_bot" }
-      }
+      "position": [200, 460],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "is-cb",
+              "leftValue": "={{ $json.callback_query ? 'yes' : 'no' }}",
+              "rightValue": "yes",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-callback",
+      "name": "Is button tap?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [420, 460]
     },
     {
       "parameters": {
@@ -23,15 +42,15 @@
       "name": "Parse start",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [640, 620]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
           "conditions": [
             {
-              "id": "has-lead-cond",
+              "id": "has-lead",
               "leftValue": "={{ $json.has_lead }}",
               "rightValue": true,
               "operator": { "type": "boolean", "operation": "true", "singleValue": true }
@@ -44,7 +63,7 @@
       "name": "Has lead_id?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [860, 620]
     },
     {
       "parameters": {
@@ -56,56 +75,285 @@
         "headerParameters": {
           "parameters": [
             { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=representation" }
+            { "name": "Prefer", "value": "return=minimal" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={ \"tg_chat_id\": {{ $json.chat_id }}, \"tg_connected_at\": \"{{ $now.toISO() }}\" }",
-        "options": {}
+        "options": { "response": { "response": { "responseFormat": "text" } } }
       },
-      "id": "supabase-update",
+      "id": "link-tg",
       "name": "Link tg_chat_id",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [920, 200],
-      "credentials": {
-        "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" }
-      }
+      "position": [1080, 540],
+      "credentials": { "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" } }
     },
     {
       "parameters": {
         "chatId": "={{ $('Parse start').item.json.chat_id }}",
-        "text": "=✅ You're connected{{ $('Parse start').item.json.first_name ? ', ' + $('Parse start').item.json.first_name : '' }}! I'll send your join link and a heads-up right before we go live. See you there 👋",
+        "text": "=✅ You're connected{{ $('Parse start').item.json.first_name ? ', ' + $('Parse start').item.json.first_name : '' }}! Quick one so I tailor the workshop 👇\n\nWhere are you with AI for content right now?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            { "row": { "buttons": [ { "text": "🌱 Just starting", "additionalFields": { "callback_data": "lvl|beginner" } } ] } },
+            { "row": { "buttons": [ { "text": "⚙️ Practicing", "additionalFields": { "callback_data": "lvl|practicing" } } ] } },
+            { "row": { "buttons": [ { "text": "🚀 Advanced", "additionalFields": { "callback_data": "lvl|pro" } } ] } }
+          ]
+        },
         "additionalFields": {}
       },
-      "id": "tg-confirm",
-      "name": "Confirm in Telegram",
+      "id": "send-q1",
+      "name": "Send Q1 level",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1160, 200],
-      "credentials": {
-        "telegramApi": { "name": "webinar_M_bot" }
-      }
+      "position": [1300, 540],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
     },
     {
       "parameters": {
         "chatId": "={{ $('Parse start').item.json.chat_id }}",
-        "text": "👋 This is the reminders bot for the free live workshop “Your AI has never met your client.”\n\nTo get your reminders here, first save your seat on the site — then tap the Telegram button on the confirmation screen:\n👉 https://webinar.itscontentflow.com",
+        "text": "👋 This is the reminders bot for the free live workshop \"Your AI has never met your client.\"\n\nTo get your reminders here, first save your seat on the site — then tap the Telegram button on the confirmation screen:\n👉 https://webinar.itscontentflow.com",
         "additionalFields": {}
       },
-      "id": "tg-noreg",
+      "id": "ask-register",
       "name": "Ask to register",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [920, 420],
-      "credentials": {
-        "telegramApi": { "name": "webinar_M_bot" }
-      }
+      "position": [1080, 720],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const cb = $input.first().json.callback_query || {};\nconst data = (cb.data || '');\nconst i = data.indexOf('|');\nconst field = i >= 0 ? data.slice(0, i) : data;\nconst value = i >= 0 ? data.slice(i + 1) : '';\nconst map = { lvl:'level', goal:'goal', apply:'apply', exp:'experience', strg:'struggle', niche:'niche' };\nconst col = map[field] || null;\nlet next;\nif (field==='lvl') next='q_goal';\nelse if (field==='goal') next='q_apply';\nelse if (field==='apply') next='gate';\nelse if (field==='gate') next = (value==='yes') ? 'q_exp' : 'done_no';\nelse if (field==='exp') next='q_strg';\nelse if (field==='strg') next='q_niche';\nelse if (field==='niche') next='done';\nelse next='done';\nreturn [{ json: {\n  chat_id: cb.from && cb.from.id,\n  first_name: (cb.from && cb.from.first_name) || '',\n  field, value, col, hasCol: !!col, next\n} }];"
+      },
+      "id": "parse-callback",
+      "name": "Parse callback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "has-col",
+              "leftValue": "={{ $json.hasCol }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-has-col",
+      "name": "Save this answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://coxzeqtgtokfsrfnzxwn.supabase.co/rest/v1/webinar_leads?tg_chat_id=eq.{{ $json.chat_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ {{ JSON.stringify($json.col) }}: {{ JSON.stringify($json.value) }} }",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "save-answer",
+      "name": "Save answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 240],
+      "credentials": { "supabaseApi": { "name": "Supabase Beyond Promts (service_role)" } }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "q_goal", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "q_goal" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "q_apply", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "q_apply" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "gate", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "gate" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "q_exp", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "q_exp" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "q_strg", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "q_strg" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "q_niche", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "q_niche" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "done", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "done" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [ { "leftValue": "={{ $('Parse callback').item.json.next }}", "rightValue": "done_no", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "done_no" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-next",
+      "name": "Route to next",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "Got it. What do you most want from the workshop?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "🎯 First results", "additionalFields": { "callback_data": "goal|results" } } ] } },
+          { "row": { "buttons": [ { "text": "🔁 A repeatable system", "additionalFields": { "callback_data": "goal|system" } } ] } },
+          { "row": { "buttons": [ { "text": "🧩 Help with my niche", "additionalFields": { "callback_data": "goal|case" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-q2",
+      "name": "Send Q2 goal",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 120],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "Where will you use this most?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "📱 Social content", "additionalFields": { "callback_data": "apply|social" } } ] } },
+          { "row": { "buttons": [ { "text": "✉️ Email & newsletters", "additionalFields": { "callback_data": "apply|email" } } ] } },
+          { "row": { "buttons": [ { "text": "🌐 Website & blog", "additionalFields": { "callback_data": "apply|web" } } ] } },
+          { "row": { "buttons": [ { "text": "💬 Client work", "additionalFields": { "callback_data": "apply|client" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-q3",
+      "name": "Send Q3 apply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 240],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "Nice — that already helps 🙌 Got 30 sec for a few more so I really tailor it?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "✅ Let's go", "additionalFields": { "callback_data": "gate|yes" } } ] } },
+          { "row": { "buttons": [ { "text": "🕒 Maybe later", "additionalFields": { "callback_data": "gate|no" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-gate",
+      "name": "Send gate",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 360],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "How long have you used AI to write?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "🐣 Under 3 months", "additionalFields": { "callback_data": "exp|new" } } ] } },
+          { "row": { "buttons": [ { "text": "📆 3–12 months", "additionalFields": { "callback_data": "exp|mid" } } ] } },
+          { "row": { "buttons": [ { "text": "🧠 1 year+", "additionalFields": { "callback_data": "exp|veteran" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-q4",
+      "name": "Send Q4 experience",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 480],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "What's the most annoying part right now?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "🤖 Sounds generic", "additionalFields": { "callback_data": "strg|generic" } } ] } },
+          { "row": { "buttons": [ { "text": "⏳ Too slow", "additionalFields": { "callback_data": "strg|slow" } } ] } },
+          { "row": { "buttons": [ { "text": "❓ Don't know what to prompt", "additionalFields": { "callback_data": "strg|prompting" } } ] } },
+          { "row": { "buttons": [ { "text": "🎭 Doesn't sound like me", "additionalFields": { "callback_data": "strg|voice" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-q5",
+      "name": "Send Q5 struggle",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 600],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "Last one — what best describes you?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": { "rows": [
+          { "row": { "buttons": [ { "text": "🧑‍🏫 Coach", "additionalFields": { "callback_data": "niche|coach" } } ] } },
+          { "row": { "buttons": [ { "text": "🎨 Creator", "additionalFields": { "callback_data": "niche|creator" } } ] } },
+          { "row": { "buttons": [ { "text": "🛍️ Ecommerce", "additionalFields": { "callback_data": "niche|ecom" } } ] } },
+          { "row": { "buttons": [ { "text": "🧰 Service business", "additionalFields": { "callback_data": "niche|service" } } ] } },
+          { "row": { "buttons": [ { "text": "✍️ Freelancer", "additionalFields": { "callback_data": "niche|freelancer" } } ] } }
+        ] },
+        "additionalFields": {}
+      },
+      "id": "send-q6",
+      "name": "Send Q6 niche",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 720],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "Perfect — noted. I'll tailor a few things for you. See you live 🎬",
+        "additionalFields": {}
+      },
+      "id": "send-done",
+      "name": "Send done",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 840],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parse callback').item.json.chat_id }}",
+        "text": "No worries! You're all set — I'll send your reminders here. See you live 🎬",
+        "additionalFields": {}
+      },
+      "id": "send-done-no",
+      "name": "Send done (later)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1560, 960],
+      "credentials": { "telegramApi": { "name": "webinar_M_bot" } }
     }
   ],
   "connections": {
-    "Telegram Trigger": { "main": [[{ "node": "Parse start", "type": "main", "index": 0 }]] },
+    "Telegram Trigger": { "main": [[{ "node": "Is button tap?", "type": "main", "index": 0 }]] },
+    "Is button tap?": {
+      "main": [
+        [{ "node": "Parse callback", "type": "main", "index": 0 }],
+        [{ "node": "Parse start", "type": "main", "index": 0 }]
+      ]
+    },
     "Parse start": { "main": [[{ "node": "Has lead_id?", "type": "main", "index": 0 }]] },
     "Has lead_id?": {
       "main": [
@@ -113,7 +361,27 @@
         [{ "node": "Ask to register", "type": "main", "index": 0 }]
       ]
     },
-    "Link tg_chat_id": { "main": [[{ "node": "Confirm in Telegram", "type": "main", "index": 0 }]] }
+    "Link tg_chat_id": { "main": [[{ "node": "Send Q1 level", "type": "main", "index": 0 }]] },
+    "Parse callback": { "main": [[{ "node": "Save this answer?", "type": "main", "index": 0 }]] },
+    "Save this answer?": {
+      "main": [
+        [{ "node": "Save answer", "type": "main", "index": 0 }],
+        [{ "node": "Route to next", "type": "main", "index": 0 }]
+      ]
+    },
+    "Save answer": { "main": [[{ "node": "Route to next", "type": "main", "index": 0 }]] },
+    "Route to next": {
+      "main": [
+        [{ "node": "Send Q2 goal", "type": "main", "index": 0 }],
+        [{ "node": "Send Q3 apply", "type": "main", "index": 0 }],
+        [{ "node": "Send gate", "type": "main", "index": 0 }],
+        [{ "node": "Send Q4 experience", "type": "main", "index": 0 }],
+        [{ "node": "Send Q5 struggle", "type": "main", "index": 0 }],
+        [{ "node": "Send Q6 niche", "type": "main", "index": 0 }],
+        [{ "node": "Send done", "type": "main", "index": 0 }],
+        [{ "node": "Send done (later)", "type": "main", "index": 0 }]
+      ]
+    }
   },
   "settings": { "executionOrder": "v1" }
 }
